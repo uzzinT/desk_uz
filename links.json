@@ -13,5 +13,12 @@
       "name": "매뉴얼·지침"
     }
   ],
-  "items": []
+  "items": [
+    {
+      "title": "QR 리더",
+      "desc": "",
+      "url": "https://uzzint.github.io/QRdecode/",
+      "category": "site"
+    }
+  ]
 }
