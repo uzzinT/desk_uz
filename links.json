@@ -16,7 +16,7 @@
   "items": [
     {
       "title": "QR 리더",
-      "desc": "",
+      "desc": "이미지의 QR코드를 읽는 사이트입니다.\n이미지 파일을 업로드하거나 복사(캡처) 후 붙여넣기 하면 QR코드의 링크를 읽어줍니다.",
       "url": "https://uzzint.github.io/QRdecode/",
       "category": "site"
     }
