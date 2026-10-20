@@ -53,7 +53,10 @@
   details[open] > summary { margin-bottom: 8px; }
   .kind { font-size: 11px; font-weight: 800; padding: 2px 6px; border-radius: 6px; background: var(--bg); color: var(--muted); flex: none; }
   .sum-title { font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .sum-cat { color: var(--muted); font-size: 13px; white-space: nowrap; }
+  .grouphead { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 20px 0 8px; }
+  .grouphead h3 { margin: 0; font-size: 16px; font-weight: 700; }
+  .grouphead h3 small { color: var(--muted); font-weight: 500; margin-left: 4px; }
+  .group .none { color: var(--muted); font-size: 14px; padding: 4px 2px 8px; margin: 0; }
   .chev { color: var(--accent); font-size: 13px; white-space: nowrap; }
   details[open] .chev::after { content: "접기"; }
   details:not([open]) .chev::after { content: "편집"; }
@@ -123,7 +126,6 @@
     <summary>
       <span class="kind"></span>
       <span class="sum-title"></span>
-      <span class="sum-cat"></span>
       <span class="chev" aria-hidden="true"></span>
     </summary>
     <div class="seg" role="group" aria-label="종류">
@@ -269,7 +271,8 @@ async function setup() {
 
 const openItems = new WeakSet(); // which editors are expanded, kept across re-renders
 const kindOf = new WeakMap();    // link/file choice for items that have no url yet
-const catName = id => categories.find(c => c.id === id)?.name || "기타";
+const catKey = it => categories.some(c => c.id === it.category) ? it.category : ""; // unknown → 기타
+const itemEls = new Map(); // item → its editor, rebuilt each render
 
 function renderFilter() {
   const f = $("filter"), keep = f.options.length ? f.value : "*";
@@ -277,26 +280,42 @@ function renderFilter() {
   f.value = [...f.options].some(o => o.value === keep) ? keep : "*";
 }
 
-function addItem() {
-  const category = $("filter").value === "*" ? (categories[0]?.id || "") : $("filter").value;
+function addItem(category) {
   const it = { title: "", desc: "", url: "", category };
   items.unshift(it);
   openItems.add(it);
   render();
   dirty();
-  const first = $("list").firstElementChild;
-  first.scrollIntoView({ behavior: "smooth", block: "center" });
-  first.querySelector("[data-k=title]").focus({ preventScroll: true });
+  const el = itemEls.get(it);
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+  el.querySelector("[data-k=title]").focus({ preventScroll: true });
 }
 
 function render() {
   renderCategories();
   renderFilter();
   const filter = $("filter").value;
-  $("list").replaceChildren(...items.map((it, i) => {
+  itemEls.clear();
+  const groups = [...categories, { id: "", name: "기타 (분류 없음)" }]
+    .filter(c => filter === "*" || c.id === filter)
+    .map(c => ({ c, list: items.filter(it => catKey(it) === c.id) }))
+    .filter(g => g.c.id || g.list.length || filter === ""); // 기타 only when it has items
+  $("list").replaceChildren(...groups.map(({ c, list }) => {
+    const sec = Object.assign(document.createElement("section"), { className: "group" });
+    const head = Object.assign(document.createElement("div"), { className: "grouphead" });
+    const h = Object.assign(document.createElement("h3"), { textContent: c.name || "이름 없음" });
+    h.append(Object.assign(document.createElement("small"), { textContent: list.length + "개" }));
+    head.append(h, Object.assign(document.createElement("button"), { textContent: "➕ 이 분류에 추가", onclick: () => addItem(c.id) }));
+    sec.append(head, ...list.map(entry));
+    if (!list.length) sec.append(Object.assign(document.createElement("p"), { className: "none", textContent: "아직 항목이 없어요." }));
+    return sec;
+  }));
+}
+
+function entry(it) {
     const el = $("entryTpl").content.firstElementChild.cloneNode(true);
+    itemEls.set(it, el);
     el.open = openItems.has(it);
-    el.hidden = filter !== "*" && (categories.some(c => c.id === it.category) ? it.category : "") !== filter;
     el.addEventListener("toggle", () => { el.open ? openItems.add(it) : openItems.delete(it); });
 
     const kind = () => it.url ? (isFile(it) ? "file" : "link") : (kindOf.get(it) || "link");
@@ -304,7 +323,6 @@ function render() {
       const k = kind();
       el.querySelector(".kind").textContent = k === "file" ? (it.url ? fileExt(it) : "파일") : "LINK";
       el.querySelector(".sum-title").textContent = it.title || "새 항목 (제목 없음)";
-      el.querySelector(".sum-cat").textContent = catName(it.category);
       el.querySelector(".linkBox").hidden = k !== "link";
       el.querySelector(".fileBox").hidden = k !== "file";
       el.querySelector(".fileName").textContent = isFile(it) ? fileName(it) : "아직 올린 파일이 없어요.";
@@ -316,6 +334,7 @@ function render() {
       input.value = it[input.dataset.k] || "";
       input.addEventListener("input", () => { it[input.dataset.k] = input.value; refresh(); dirty(); });
     });
+    el.querySelector("[data-k=category]").addEventListener("change", render); // move it to its new group
     el.querySelectorAll("[data-kind]").forEach(b => b.onclick = () => {
       if (b.dataset.kind === kind()) return;
       if (it.url && !confirm("종류를 바꾸면 지금 링크/파일 정보가 지워져요. 바꿀까요?")) return;
@@ -324,15 +343,25 @@ function render() {
       refresh(); dirty();
     });
     el.querySelector("input[type=file]").addEventListener("change", e => uploadFile(e.target.files[0], it, refresh));
-    el.querySelector(".up").onclick = () => move(items, i, -1);
-    el.querySelector(".down").onclick = () => move(items, i, 1);
+    el.querySelector(".up").onclick = () => moveItem(it, -1);
+    el.querySelector(".down").onclick = () => moveItem(it, 1);
     el.querySelector(".del").onclick = () => {
       if (!confirm("'" + (it.title || "제목 없음") + "'을(를) 삭제할까요?")) return;
-      items.splice(i, 1); render(); dirty();
+      items.splice(items.indexOf(it), 1); render(); dirty();
     };
     refresh();
     return el;
-  }));
+}
+
+// Up/down swaps with the neighbour in the same category, since that's what the grouped list shows.
+function moveItem(it, d) {
+  const same = items.filter(x => catKey(x) === catKey(it));
+  const other = same[same.indexOf(it) + d];
+  if (!other) return;
+  const i = items.indexOf(it), j = items.indexOf(other);
+  [items[i], items[j]] = [items[j], items[i]];
+  render();
+  dirty();
 }
 
 function move(arr, i, d) {
@@ -400,7 +429,7 @@ async function save() {
     openItems.add(it);
     $("filter").value = "*";
     render();
-    $("list").children[items.indexOf(it)].scrollIntoView({ block: "center" });
+    itemEls.get(it).scrollIntoView({ block: "center" });
     alert(msg);
   };
   for (const it of items) {
@@ -447,10 +476,10 @@ $("pw").addEventListener("keydown", e => e.key === "Enter" && login());
 $("setupBtn").onclick = setup;
 $("resetLink").onclick = e => { e.preventDefault(); show("setup"); };
 $("addCatBtn").onclick = () => { categories.push({ id: Date.now().toString(36), name: "" }); render(); dirty(); };
-$("addBtn").onclick = $("addTopBtn").onclick = addItem;
+$("addBtn").onclick = $("addTopBtn").onclick = () => addItem($("filter").value === "*" ? (categories[0]?.id || "") : $("filter").value);
 $("filter").onchange = render;
 $("saveBtn").onclick = save;
-$("logoutBtn").onclick = () => { store("gh_token", null); location.reload(); };
+$("logoutBtn").onclick = () => { store("gh_token", null); location.href = "./"; };
 addEventListener("beforeunload", e => { if ($("msg").textContent.includes("저장 안 된")) e.preventDefault(); });
 
 if (load("gh_token")) openEditor(load("gh_token"));
