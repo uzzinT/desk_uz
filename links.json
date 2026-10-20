@@ -1,0 +1,8 @@
+{
+  "categories": [
+    { "id": "site", "name": "업무 사이트" },
+    { "id": "form", "name": "서식·양식" },
+    { "id": "guide", "name": "매뉴얼·지침" }
+  ],
+  "items": []
+}

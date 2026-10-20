@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>desk_uz · 관리</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232F5BEA'/><text x='16' y='22' font-size='15' font-family='sans-serif' font-weight='700' fill='white' text-anchor='middle'>uz</text></svg>">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root { --bg: #F5F6F8; --card: #FFFFFF; --ink: #191F28; --muted: #6B7684; --line: #E5E8EB; --accent: #2F5BEA; --danger: #E5484D; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #101216; --card: #1A1D23; --ink: #E8EAED; --muted: #9AA3AE; --line: #2A2F37; --accent: #7B9BFF; --danger: #FF7A7F; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: Pretendard, system-ui, sans-serif; line-height: 1.5; }
+  main { max-width: 760px; margin: 0 auto; padding: 28px 16px 120px; }
+  h1 { font-weight: 800; font-size: 24px; margin: 0 0 4px; }
+  h1 + p { margin: 0 0 20px; color: var(--muted); }
+  a { color: var(--accent); }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 4px; }
+  h2 { font-weight: 700; font-size: 18px; margin: 24px 0 10px; }
+  .cat { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; }
+  input[type=text], input[type=password], textarea, select {
+    width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px;
+    background: var(--bg); color: var(--ink); font: inherit;
+  }
+  textarea { resize: vertical; min-height: 56px; }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); }
+  button, .upload {
+    font: inherit; font-size: 14px; cursor: pointer; border-radius: 8px; padding: 7px 12px;
+    border: 1px solid var(--line); background: var(--card); color: var(--ink); display: inline-block;
+  }
+  button:hover, .upload:hover { border-color: var(--accent); }
+  button:disabled { opacity: .5; cursor: wait; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; font-size: 15px; }
+  button.danger { color: var(--danger); }
+  .upload input { display: none; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .hint { font-size: 13px; color: var(--muted); margin: 4px 0 0; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .seg button { border: none; border-radius: 0; }
+  .seg button[aria-pressed=true] { background: var(--accent); color: #fff; }
+  .tools { justify-content: space-between; margin-top: 12px; }
+  .listhead { justify-content: space-between; margin: 24px 0 10px; }
+  .listhead h2 { margin: 0; }
+  .listhead select { width: auto; padding: 7px 10px; }
+  details.panel { padding: 10px 14px; }
+  details.panel[open] { padding-bottom: 16px; }
+  details.panel > summary { list-style: none; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  details.panel > summary::-webkit-details-marker { display: none; }
+  details[open] > summary { margin-bottom: 8px; }
+  .kind { font-size: 11px; font-weight: 800; padding: 2px 6px; border-radius: 6px; background: var(--bg); color: var(--muted); flex: none; }
+  .sum-title { font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sum-cat { color: var(--muted); font-size: 13px; white-space: nowrap; }
+  .chev { color: var(--accent); font-size: 13px; white-space: nowrap; }
+  details[open] .chev::after { content: "접기"; }
+  details:not([open]) .chev::after { content: "편집"; }
+  .savebar {
+    position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px;
+    background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(6px); border-top: 1px solid var(--line);
+  }
+  .savebar .row { max-width: 760px; margin: 0 auto; justify-content: space-between; }
+  #msg { color: var(--muted); font-size: 14px; }
+  .pwbox { display: flex; gap: 6px; }
+  .pwbox button { white-space: nowrap; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>⚙️ 관리</h1>
+  <p>여기서 고친 내용은 <a href="./" target="_blank">자료실 화면</a>에 1~2분 뒤 반영돼요.</p>
+
+  <section class="panel" id="login" hidden>
+    <label for="pw">관리자 비밀번호</label>
+    <input type="password" id="pw" autocomplete="current-password">
+    <div class="row" style="margin-top:12px"><button class="primary" id="loginBtn">들어가기</button></div>
+    <p class="hint"><a href="#" id="resetLink">토큰이 만료됐거나 비밀번호를 바꾸고 싶어요</a></p>
+  </section>
+
+  <section class="panel" id="setup" hidden>
+    <p style="margin-top:0"><b>처음 설정</b> · GitHub 토큰을 한 번만 넣고 관리자 비밀번호를 정해요.</p>
+    <label for="token">GitHub 토큰 (desk_uz 저장소 Contents 읽기·쓰기 권한)</label>
+    <input type="text" id="token" autocomplete="off" spellcheck="false" placeholder="github_pat_...">
+    <label for="newPw">관리자 비밀번호 (8자 이상)</label>
+    <input type="password" id="newPw" autocomplete="new-password">
+    <p class="hint">토큰은 이 비밀번호로 암호화돼서 저장소에 저장돼요. 비밀번호를 잊으면 토큰을 새로 만들어 여기서 다시 설정하면 돼요.</p>
+    <div class="row" style="margin-top:12px"><button class="primary" id="setupBtn">설정하기</button></div>
+  </section>
+
+  <div id="editor" hidden>
+    <h2>📁 분류</h2>
+    <section class="panel">
+      <div id="catList"></div>
+      <button id="addCatBtn" style="margin-top:4px">➕ 분류 추가</button>
+    </section>
+    <div class="row listhead">
+      <h2>📋 항목</h2>
+      <div class="row">
+        <select id="filter" aria-label="분류별로 보기"></select>
+        <button class="primary" id="addTopBtn">➕ 새 항목</button>
+      </div>
+    </div>
+    <div id="list"></div>
+    <div class="row">
+      <button id="addBtn">➕ 새 항목</button>
+      <button id="logoutBtn" style="margin-left:auto">로그아웃</button>
+    </div>
+  </div>
+</main>
+
+<div class="savebar" id="savebar" hidden>
+  <div class="row">
+    <span id="msg"></span>
+    <button class="primary" id="saveBtn">💾 저장하기</button>
+  </div>
+</div>
+
+<template id="entryTpl">
+  <details class="panel">
+    <summary>
+      <span class="kind"></span>
+      <span class="sum-title"></span>
+      <span class="sum-cat"></span>
+      <span class="chev" aria-hidden="true"></span>
+    </summary>
+    <div class="seg" role="group" aria-label="종류">
+      <button type="button" data-kind="link">🔗 링크</button>
+      <button type="button" data-kind="file">📄 파일</button>
+    </div>
+    <label>분류</label>
+    <select data-k="category"></select>
+    <label>제목</label>
+    <input type="text" data-k="title" required>
+    <label>설명 (선택)</label>
+    <textarea data-k="desc"></textarea>
+    <div class="linkBox">
+      <label>링크 주소</label>
+      <input type="text" data-k="url" inputmode="url" placeholder="https://...">
+    </div>
+    <div class="fileBox">
+      <label>파일</label>
+      <div class="row">
+        <label class="upload" style="margin:0"><span>📤 파일 올리기</span><input type="file"></label>
+        <span class="fileName hint" style="margin:0"></span>
+      </div>
+      <p class="hint">올린 파일은 누구나 내려받을 수 있어요. 개인정보가 담긴 문서는 올리지 마세요.</p>
+    </div>
+    <div class="row tools">
+      <div class="row">
+        <button class="up" aria-label="위로">⬆️</button>
+        <button class="down" aria-label="아래로">⬇️</button>
+      </div>
+      <button class="danger del">🗑️ 삭제</button>
+    </div>
+  </details>
+</template>
+
+<script src="common.js?v=20261020"></script>
+<script>
+const REPO = "uzzinT/desk_uz";
+const MAX_MB = 50; // GitHub's contents API rejects files over ~100MB; base64 in the browser makes big ones slow
+const $ = id => document.getElementById(id);
+let token = "";
+let categories = [], items = [];
+let sha = "";
+
+// Token lives only for this tab session; the password unlocks it again next time.
+function store(k, v) { try { v == null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k, v); } catch {} }
+function load(k) { try { return sessionStorage.getItem(k) || ""; } catch { return ""; } }
+
+const bytesToB64 = bytes => { let bin = ""; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(bin); };
+const b64ToBytes = b64 => Uint8Array.from(atob(b64.replace(/\n/g, "")), c => c.charCodeAt(0));
+// GitHub's contents API speaks base64; go through bytes so Korean text survives.
+const toB64 = text => bytesToB64(new TextEncoder().encode(text));
+const fromB64 = b64 => new TextDecoder().decode(b64ToBytes(b64));
+console.assert(fromB64(toB64("업무 자료 📁")) === "업무 자료 📁", "base64 roundtrip");
+
+// auth.json is public, so the token in it is AES-GCM encrypted with a key stretched from the password.
+const ITER = 600000;
+async function passwordKey(pw, salt, iter) {
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: iter, hash: "SHA-256" },
+    base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+}
+async function encryptToken(tok, pw) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const data = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await passwordKey(pw, salt, ITER), new TextEncoder().encode(tok));
+  return { iter: ITER, salt: bytesToB64(salt), iv: bytesToB64(iv), data: bytesToB64(new Uint8Array(data)) };
+}
+async function decryptToken(auth, pw) { // throws on a wrong password
+  const key = await passwordKey(pw, b64ToBytes(auth.salt), auth.iter);
+  return new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64ToBytes(auth.iv) }, key, b64ToBytes(auth.data)));
+}
+
+// path segments must already be URL-encoded (Korean file names).
+async function gh(path, opts = {}) {
+  const res = await fetch("https://api.github.com/repos/" + REPO + "/contents/" + path, {
+    ...opts,
+    headers: { Authorization: "Bearer " + token, Accept: "application/vnd.github+json" },
+  });
+  if (!res.ok) throw Object.assign(new Error(res.status + " " + (await res.text())), { status: res.status });
+  return res.json();
+}
+
+function say(text) { $("msg").textContent = text; }
+const dirty = () => say("저장 안 된 변경이 있어요.");
+
+function show(id) { for (const s of ["login", "setup", "editor", "savebar"]) $(s).hidden = !(s === id || (id === "editor" && s === "savebar")); }
+
+// Loads links.json with the token; returns false (after telling the user) if the token doesn't work.
+async function openEditor(tok) {
+  token = tok;
+  try {
+    const file = await gh("links.json");
+    sha = file.sha;
+    ({ categories, items } = normalize(JSON.parse(fromB64(file.content))));
+  } catch (e) {
+    token = "";
+    store("gh_token", null);
+    alert(e.status === 401 || e.status === 403 || e.status === 404
+      ? "토큰이 만료됐거나 이 저장소 권한이 없어요. 새 토큰으로 다시 설정해 주세요."
+      : "불러오지 못했어요: " + e.message);
+    return false;
+  }
+  store("gh_token", token);
+  show("editor");
+  render();
+  say("불러왔어요.");
+  return true;
+}
+
+async function login() {
+  const pw = $("pw").value;
+  if (!pw) return;
+  $("loginBtn").disabled = true;
+  try {
+    const auth = await fetch("auth.json", { cache: "no-cache" }).then(r => r.json());
+    let tok;
+    try { tok = await decryptToken(auth, pw); }
+    catch { return alert("비밀번호가 틀렸어요."); }
+    if (!(await openEditor(tok))) show("setup");
+  } finally {
+    $("loginBtn").disabled = false;
+  }
+}
+
+async function setup() {
+  const tok = $("token").value.trim(), pw = $("newPw").value;
+  if (!tok) return alert("GitHub 토큰을 넣어 주세요.");
+  if (pw.length < 8) return alert("비밀번호는 8자 이상으로 정해 주세요.");
+  $("setupBtn").disabled = true;
+  try {
+    if (!(await openEditor(tok))) return show("setup");
+    const body = { message: "Set admin password", content: toB64(JSON.stringify(await encryptToken(tok, pw)) + "\n") };
+    try { body.sha = (await gh("auth.json")).sha; } catch (e) { if (e.status !== 404) throw e; }
+    await gh("auth.json", { method: "PUT", body: JSON.stringify(body) });
+    say("✅ 비밀번호를 설정했어요. 1~2분 뒤부터 다른 기기에서도 비밀번호로 들어올 수 있어요.");
+  } catch (e) {
+    alert("비밀번호를 저장하지 못했어요: " + e.message);
+  } finally {
+    $("setupBtn").disabled = false;
+    $("token").value = $("newPw").value = "";
+  }
+}
+
+const openItems = new WeakSet(); // which editors are expanded, kept across re-renders
+const kindOf = new WeakMap();    // link/file choice for items that have no url yet
+const catName = id => categories.find(c => c.id === id)?.name || "기타";
+
+function renderFilter() {
+  const f = $("filter"), keep = f.options.length ? f.value : "*";
+  f.replaceChildren(new Option("전체 분류", "*"), ...[...categories, { id: "", name: "기타" }].map(c => new Option(c.name || "이름 없음", c.id)));
+  f.value = [...f.options].some(o => o.value === keep) ? keep : "*";
+}
+
+function addItem() {
+  const category = $("filter").value === "*" ? (categories[0]?.id || "") : $("filter").value;
+  const it = { title: "", desc: "", url: "", category };
+  items.unshift(it);
+  openItems.add(it);
+  render();
+  dirty();
+  const first = $("list").firstElementChild;
+  first.scrollIntoView({ behavior: "smooth", block: "center" });
+  first.querySelector("[data-k=title]").focus({ preventScroll: true });
+}
+
+function render() {
+  renderCategories();
+  renderFilter();
+  const filter = $("filter").value;
+  $("list").replaceChildren(...items.map((it, i) => {
+    const el = $("entryTpl").content.firstElementChild.cloneNode(true);
+    el.open = openItems.has(it);
+    el.hidden = filter !== "*" && (categories.some(c => c.id === it.category) ? it.category : "") !== filter;
+    el.addEventListener("toggle", () => { el.open ? openItems.add(it) : openItems.delete(it); });
+
+    const kind = () => it.url ? (isFile(it) ? "file" : "link") : (kindOf.get(it) || "link");
+    const refresh = () => {
+      const k = kind();
+      el.querySelector(".kind").textContent = k === "file" ? (it.url ? fileExt(it) : "파일") : "LINK";
+      el.querySelector(".sum-title").textContent = it.title || "새 항목 (제목 없음)";
+      el.querySelector(".sum-cat").textContent = catName(it.category);
+      el.querySelector(".linkBox").hidden = k !== "link";
+      el.querySelector(".fileBox").hidden = k !== "file";
+      el.querySelector(".fileName").textContent = isFile(it) ? fileName(it) : "아직 올린 파일이 없어요.";
+      el.querySelectorAll("[data-kind]").forEach(b => b.setAttribute("aria-pressed", b.dataset.kind === k));
+    };
+
+    el.querySelector("select").append(...[...categories, { id: "", name: "기타 (분류 없음)" }].map(c => new Option(c.name || "이름 없음", c.id)));
+    el.querySelectorAll("[data-k]").forEach(input => {
+      input.value = it[input.dataset.k] || "";
+      input.addEventListener("input", () => { it[input.dataset.k] = input.value; refresh(); dirty(); });
+    });
+    el.querySelectorAll("[data-kind]").forEach(b => b.onclick = () => {
+      if (b.dataset.kind === kind()) return;
+      if (it.url && !confirm("종류를 바꾸면 지금 링크/파일 정보가 지워져요. 바꿀까요?")) return;
+      it.url = ""; el.querySelector("[data-k=url]").value = "";
+      kindOf.set(it, b.dataset.kind);
+      refresh(); dirty();
+    });
+    el.querySelector("input[type=file]").addEventListener("change", e => uploadFile(e.target.files[0], it, refresh));
+    el.querySelector(".up").onclick = () => move(items, i, -1);
+    el.querySelector(".down").onclick = () => move(items, i, 1);
+    el.querySelector(".del").onclick = () => {
+      if (!confirm("'" + (it.title || "제목 없음") + "'을(를) 삭제할까요?")) return;
+      items.splice(i, 1); render(); dirty();
+    };
+    refresh();
+    return el;
+  }));
+}
+
+function move(arr, i, d) {
+  const j = i + d;
+  if (j < 0 || j >= arr.length) return;
+  [arr[i], arr[j]] = [arr[j], arr[i]];
+  render();
+  dirty();
+}
+
+function renderCategories() {
+  $("catList").replaceChildren(...categories.map((c, i) => {
+    const row = document.createElement("div");
+    row.className = "cat";
+    const name = Object.assign(document.createElement("input"), { type: "text", value: c.name, placeholder: "분류 이름" });
+    name.setAttribute("aria-label", "분류 이름");
+    name.oninput = () => { c.name = name.value; dirty(); };
+    name.onchange = render; // refresh the category dropdowns on the items
+    const tools = document.createElement("div");
+    tools.className = "row";
+    const btn = (text, label, fn) => { const b = Object.assign(document.createElement("button"), { textContent: text, onclick: fn }); b.setAttribute("aria-label", label); return b; };
+    tools.append(
+      btn("⬆️", "위로", () => move(categories, i, -1)),
+      btn("⬇️", "아래로", () => move(categories, i, 1)),
+      Object.assign(btn("🗑️", "분류 삭제", () => {
+        const n = items.filter(it => it.category === c.id).length;
+        if (!confirm("'" + (c.name || "이름 없음") + "' 분류를 삭제할까요?" + (n ? "\n이 분류의 항목 " + n + "개는 '기타'로 옮겨져요." : ""))) return;
+        items.forEach(it => { if (it.category === c.id) it.category = ""; });
+        categories.splice(i, 1);
+        render();
+        dirty();
+      }), { className: "danger" }),
+    );
+    row.append(name, tools);
+    return row;
+  }));
+}
+
+// Uploads to files/<id>/<original name> so the download keeps its name and never overwrites another file.
+async function uploadFile(file, it, done) {
+  if (!file) return;
+  if (file.size > MAX_MB * 1024 * 1024) return alert(MAX_MB + "MB보다 작은 파일을 골라 주세요.");
+  say("파일 올리는 중... (" + (file.size / 1048576).toFixed(1) + "MB)");
+  $("saveBtn").disabled = true;
+  try {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const name = file.name.replace(/[\\/:*?"<>|#%]/g, "_");
+    const path = "files/" + Date.now().toString(36) + "/" + encodeURIComponent(name);
+    await gh(path, { method: "PUT", body: JSON.stringify({ message: "Add file " + name, content: bytesToB64(bytes) }) });
+    it.url = path;
+    if (!it.title) it.title = name.replace(/\.\w+$/, "");
+    render();
+    say("파일을 올렸어요. '저장하기'를 눌러야 목록에 반영돼요.");
+  } catch (e) {
+    say("파일을 올리지 못했어요: " + e.message);
+  } finally {
+    $("saveBtn").disabled = false;
+  }
+}
+
+async function save() {
+  if (categories.some(c => !c.name.trim())) return alert("이름이 비어 있는 분류가 있어요.");
+  // Open and show the first bad entry, since it may be collapsed or filtered out.
+  const reveal = (it, msg) => {
+    openItems.add(it);
+    $("filter").value = "*";
+    render();
+    $("list").children[items.indexOf(it)].scrollIntoView({ block: "center" });
+    alert(msg);
+  };
+  for (const it of items) {
+    if (!it.title?.trim()) return reveal(it, "제목이 비어 있는 항목이 있어요.");
+    if (isFile(it)) continue;
+    if (kindOf.get(it) === "file" && !it.url) return reveal(it, "'" + it.title + "'에 아직 파일을 올리지 않았어요.");
+    if (!/^https?:\/\/\S+$/.test(it.url?.trim() || "")) return reveal(it, "'" + it.title + "'의 링크 주소는 https:// 로 시작해야 해요.");
+  }
+  say("저장하는 중...");
+  $("saveBtn").disabled = true;
+  try {
+    const res = await gh("links.json", {
+      method: "PUT",
+      body: JSON.stringify({ message: "Update links", content: toB64(JSON.stringify({ categories, items }, null, 2) + "\n"), sha }),
+    });
+    sha = res.content.sha;
+    say("✅ 저장됐어요! 1~2분 뒤 사이트에 반영돼요.");
+  } catch (e) {
+    say(e.status === 409
+      ? "다른 곳에서 먼저 수정됐어요. 새로고침한 뒤 다시 고쳐 주세요."
+      : "저장하지 못했어요: " + e.message);
+  } finally {
+    $("saveBtn").disabled = false;
+  }
+}
+
+// "보기" button next to each password box toggles showing the text.
+document.querySelectorAll("input[type=password]").forEach(input => {
+  const box = Object.assign(document.createElement("div"), { className: "pwbox" });
+  const eye = Object.assign(document.createElement("button"), { type: "button", textContent: "보기" });
+  eye.setAttribute("aria-pressed", "false");
+  eye.onclick = () => {
+    const show = input.type === "password";
+    input.type = show ? "text" : "password";
+    eye.textContent = show ? "숨기기" : "보기";
+    eye.setAttribute("aria-pressed", show);
+  };
+  input.replaceWith(box);
+  box.append(input, eye);
+});
+
+$("loginBtn").onclick = login;
+$("pw").addEventListener("keydown", e => e.key === "Enter" && login());
+$("setupBtn").onclick = setup;
+$("resetLink").onclick = e => { e.preventDefault(); show("setup"); };
+$("addCatBtn").onclick = () => { categories.push({ id: Date.now().toString(36), name: "" }); render(); dirty(); };
+$("addBtn").onclick = $("addTopBtn").onclick = addItem;
+$("filter").onchange = render;
+$("saveBtn").onclick = save;
+$("logoutBtn").onclick = () => { store("gh_token", null); location.reload(); };
+addEventListener("beforeunload", e => { if ($("msg").textContent.includes("저장 안 된")) e.preventDefault(); });
+
+if (load("gh_token")) openEditor(load("gh_token"));
+else fetch("auth.json", { cache: "no-cache" }).then(r => show(r.ok ? "login" : "setup"), () => show("setup"));
+</script>
+</body>
+</html>
