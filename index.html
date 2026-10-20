@@ -161,7 +161,6 @@ function row(it) {
   const bottom = el("div", "bottom");
   bottom.append(el("span", "meta", metaText(it)), actionLink(it));
   card.append(top);
-  if (it.desc) card.append(el("span", "desc", it.desc));
   card.append(bottom);
   return card;
 }
