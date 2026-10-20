@@ -48,22 +48,33 @@
   .item {
     display: flex; flex-direction: column; gap: 10px; padding: 16px; min-height: 150px;
     background: var(--card); border: 1px solid var(--line); border-radius: 14px;
-    color: inherit; text-decoration: none; transition: border-color .15s, box-shadow .15s, transform .15s;
+    color: inherit; cursor: pointer; transition: border-color .15s, box-shadow .15s, transform .15s;
   }
   .item:hover, .item:focus-visible { border-color: var(--accent); box-shadow: 0 6px 18px #0000000f; transform: translateY(-2px); outline: none; }
   @media (prefers-reduced-motion: reduce) { .item { transition: none; } .item:hover { transform: none; } }
-  .top { display: flex; align-items: center; justify-content: space-between; }
+  .top { display: flex; align-items: center; gap: 12px; }
+  .bottom { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; }
   .badge {
-    width: 44px; height: 44px; border-radius: 10px; display: grid; place-items: center;
+    flex: none; width: 44px; height: 44px; border-radius: 10px; display: grid; place-items: center;
     font-size: 11px; font-weight: 800; letter-spacing: .02em; background: var(--accent-soft); color: var(--accent);
   }
   .badge.file { background: var(--file-soft); color: var(--file); }
-  .text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-  .title { font-weight: 700; font-size: 17px; line-height: 1.35; }
+  .title { flex: 1; min-width: 0; margin: 0; font-weight: 700; font-size: 17px; line-height: 1.35; }
   .desc { font-size: 14px; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .meta { font-size: 12px; color: var(--muted); opacity: .8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .action { font-size: 13px; font-weight: 600; color: var(--accent); padding: 4px 10px; border-radius: 999px; background: var(--accent-soft); white-space: nowrap; }
+  .meta { min-width: 0; font-size: 12px; color: var(--muted); opacity: .8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .action { flex: none; font-size: 13px; font-weight: 600; color: var(--accent); padding: 5px 12px; border-radius: 999px; background: var(--accent-soft); white-space: nowrap; text-decoration: none; border: 1px solid transparent; }
   .action.file { color: var(--file); background: var(--file-soft); }
+  .action:hover, .action:focus-visible { border-color: currentColor; outline: none; }
+  /* Detail popup: clicking the dark area around it closes it (the dialog itself has no padding, so that click lands on <dialog>). */
+  #detail { padding: 0; border: none; border-radius: 18px; width: min(92vw, 480px); background: var(--card); color: var(--ink); box-shadow: 0 20px 60px #0004; }
+  #detail::backdrop { background: #0009; }
+  #detail .in { position: relative; padding: 24px; display: flex; flex-direction: column; gap: 14px; }
+  #detail .title { font-size: 20px; padding-right: 28px; }
+  #dDesc { margin: 0; font-size: 15px; white-space: pre-line; overflow-wrap: anywhere; }
+  #detail .meta { white-space: normal; word-break: break-all; }
+  #detail .action { display: block; text-align: center; font-size: 16px; padding: 12px; border-radius: 12px; }
+  #dClose { position: absolute; top: 14px; right: 14px; width: 34px; height: 34px; border: none; border-radius: 50%; background: var(--bg); color: var(--muted); font-size: 20px; line-height: 1; cursor: pointer; }
+  #dClose:hover, #dClose:focus-visible { color: var(--ink); }
   [hidden] { display: none !important; }
   .empty { text-align: center; color: var(--muted); padding: 40px 16px; }
   footer { text-align: center; color: var(--muted); font-size: 13px; padding-bottom: 32px; }
@@ -88,6 +99,16 @@
   <p class="empty" id="empty" hidden></p>
 </main>
 
+<dialog id="detail" aria-labelledby="dTitle">
+  <div class="in">
+    <button id="dClose" aria-label="닫기">×</button>
+    <div class="top"><span id="dBadge"></span><h3 class="title" id="dTitle"></h3></div>
+    <p id="dDesc"></p>
+    <span class="meta" id="dMeta"></span>
+    <div id="dAction"></div>
+  </div>
+</dialog>
+
 <footer>desk_uz · 링크는 새 탭에서 열리고, 파일은 바로 내려받아요.</footer>
 
 <script src="common.js?v=20261020"></script>
@@ -99,23 +120,50 @@ const $ = id => document.getElementById(id);
 const catOf = it => categories.some(c => c.id === it.category) ? it.category : OTHER.id;
 const el = (tag, cls, text) => Object.assign(document.createElement(tag), { className: cls, textContent: text ?? "" });
 
-function row(it) {
-  const url = safeUrl(it.url);
+const badge = it => el("span", "badge" + (isFile(it) ? " file" : ""), isFile(it) ? fileExt(it).slice(0, 4) : "LINK");
+function metaText(it) {
+  if (isFile(it)) return fileName(it);
+  try { return new URL(safeUrl(it.url)).host; } catch { return ""; }
+}
+
+// The 열기/다운로드 button works straight away, on the card and in the popup.
+function actionLink(it) {
   const file = isFile(it);
-  const a = Object.assign(document.createElement("a"), { className: "item", href: url || "#" });
+  const a = el("a", "action" + (file ? " file" : ""), file ? "다운로드 ↓" : "열기 ↗");
+  a.href = safeUrl(it.url) || "#";
   if (file) a.download = fileName(it);
   else Object.assign(a, { target: "_blank", rel: "noopener" });
-
-  const top = el("span", "top");
-  top.append(el("span", "badge" + (file ? " file" : ""), file ? fileExt(it).slice(0, 4) : "LINK"),
-    el("span", "action" + (file ? " file" : ""), file ? "다운로드 ↓" : "열기 ↗"));
-  const text = el("span", "text");
-  text.append(el("span", "title", it.title));
-  if (it.desc) text.append(el("span", "desc", it.desc));
-  let host = "";
-  try { host = new URL(url).host; } catch {}
-  a.append(top, text, el("span", "meta", file ? fileName(it) : host));
+  a.addEventListener("click", e => e.stopPropagation()); // don't also open the popup
   return a;
+}
+
+function showDetail(it) {
+  $("dBadge").replaceChildren(badge(it));
+  $("dTitle").textContent = it.title;
+  $("dDesc").textContent = it.desc || "";
+  $("dDesc").hidden = !it.desc;
+  $("dMeta").textContent = metaText(it);
+  const act = actionLink(it);
+  act.addEventListener("click", () => $("detail").close());
+  $("dAction").replaceChildren(act);
+  $("detail").showModal();
+}
+
+function row(it) {
+  const card = el("div", "item");
+  card.tabIndex = 0;
+  card.setAttribute("role", "button");
+  card.setAttribute("aria-haspopup", "dialog");
+  card.onclick = () => showDetail(it);
+  card.onkeydown = e => { if ((e.key === "Enter" || e.key === " ") && e.target === card) { e.preventDefault(); showDetail(it); } };
+  const top = el("div", "top");
+  top.append(badge(it), el("h3", "title", it.title));
+  const bottom = el("div", "bottom");
+  bottom.append(el("span", "meta", metaText(it)), actionLink(it));
+  card.append(top);
+  if (it.desc) card.append(el("span", "desc", it.desc));
+  card.append(bottom);
+  return card;
 }
 
 function render() {
@@ -150,6 +198,8 @@ function render() {
 }
 
 $("q").addEventListener("input", render);
+$("dClose").onclick = () => $("detail").close();
+$("detail").addEventListener("click", e => { if (e.target === $("detail")) $("detail").close(); }); // click outside the popup
 
 fetch("links.json", { cache: "no-cache" })
   .then(r => r.json())
