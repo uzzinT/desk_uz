@@ -446,6 +446,8 @@ async function save() {
       body: JSON.stringify({ message: "Update links", content: toB64(JSON.stringify({ categories, items }, null, 2) + "\n"), sha }),
     });
     sha = res.content.sha;
+    // GitHub Pages needs a few minutes to serve the new links.json; let this browser's 자료실 show it right away.
+    try { localStorage.setItem("desk_uz:saved", JSON.stringify({ at: Date.now(), data: { categories, items } })); } catch {}
     say("✅ 저장됐어요! 1~2분 뒤 사이트에 반영돼요.");
   } catch (e) {
     say(e.status === 409

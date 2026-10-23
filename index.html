@@ -200,10 +200,36 @@ $("q").addEventListener("input", render);
 $("dClose").onclick = () => $("detail").close();
 $("detail").addEventListener("click", e => { if (e.target === $("detail")) $("detail").close(); }); // click outside the popup
 
-fetch("links.json", { cache: "no-cache" })
-  .then(r => r.json())
-  .then(data => { ({ categories, items } = normalize(data)); render(); })
-  .catch(e => { console.error(e); $("empty").textContent = "목록을 불러오지 못했어요. 새로고침(Ctrl+F5)해 주세요."; $("empty").hidden = false; });
+// shortcut: a save from the 관리 screen in this browser wins for 15 min (Pages build + CDN cache);
+// other people's browsers still wait for Pages. Use the GitHub API instead if that ever matters.
+const FRESH_MS = 15 * 60 * 1000;
+function savedCopy() {
+  try {
+    const saved = JSON.parse(localStorage.getItem("desk_uz:saved"));
+    if (saved && Date.now() - saved.at < FRESH_MS) return saved.data;
+    localStorage.removeItem("desk_uz:saved");
+  } catch {}
+  return null;
+}
+
+function load() {
+  fetch("links.json?t=" + Date.now(), { cache: "no-store" }) // ?t= skips the browser's and CDN's cached copy where possible
+    .then(r => r.json())
+    .then(data => {
+      const saved = savedCopy();
+      if (saved && JSON.stringify(normalize(saved)) === JSON.stringify(normalize(data))) localStorage.removeItem("desk_uz:saved"); // Pages caught up
+      ({ categories, items } = normalize(saved || data));
+      render();
+    })
+    .catch(e => {
+      const saved = savedCopy();
+      if (saved) { ({ categories, items } = normalize(saved)); return render(); }
+      console.error(e); $("empty").textContent = "목록을 불러오지 못했어요. 새로고침(Ctrl+F5)해 주세요."; $("empty").hidden = false;
+    });
+}
+load();
+addEventListener("pageshow", e => { if (e.persisted) load(); }); // coming back with the browser's Back button
+addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") load(); }); // returning from the 관리 tab
 </script>
 </body>
 </html>
